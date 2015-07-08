@@ -1,0 +1,4 @@
+*~
+*.pyc
+catalog/catalogapp.db
+catalog/client_secrets.json

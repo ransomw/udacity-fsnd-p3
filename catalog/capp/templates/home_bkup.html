@@ -1,0 +1,29 @@
+{% extends "main.html" %}
+{% block content %}
+{% include "header.html" %}
+<div class="container">
+  <div class="row">
+    <div class="col-md-3">
+      <h3>Categories</h3>
+      {% for category in categories %}
+      <a href="catalog/{{category.name}}/items">
+        {{category.name}}
+      </a>
+      <br/>
+      {% endfor %}
+    </div>
+    <div class="col-md-9">
+      <h3>Latest Items</h3>
+      {% for item in items %}
+      <a href="catalog/{{item.category.name}}/{{item.title}}">
+        {{item.title}}
+      </a>
+      <span>
+        ({{item.category.name}})
+      </span>
+      <br>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

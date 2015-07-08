@@ -1,0 +1,96 @@
+body {
+    padding-top: 70px;
+    background-color: #DDD;
+}
+
+.btn {
+    border-radius: 0px;
+}
+
+.navbar {
+    background-color: #000066;
+}
+
+.navbar a {
+    color: #FFFFFF;
+    font-weight: bold;
+}
+
+.navbar-btn {
+    background-color: #FF3300;
+    color: #FFFFFF;
+}
+
+.navbar-brand,
+.navbar-brand:hover {
+    color: #FFFFFF;
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.navbar-toggle {
+    border-color: #ddd;
+}
+
+.navbar-toggle .icon-bar {
+    background-color: #888;
+}
+
+body > .container {
+    background-color: #FFF;
+    border: 2px solid #AAA;
+}
+
+/* depends on @screen-md bootstrap variable set to 992px */
+/* http://stackoverflow.com/questions/17575193/best-way-to-put-a-vertical-line-in-the-twitter-bootstrap-gutter */
+@media (min-width:992px) {
+    body > .container [class*='col-']:not(:first-child) {
+        border-left: 3px solid #DDD;
+        padding-left: 30px;
+        -webkit-box-sizing: border-box;
+        -moz-box-sizing: border-box;
+        box-sizing: border-box;
+    }
+    /* ensure border fills entire box */
+    /* http://getbootstrap.com.vn/examples/equal-height-columns/ */
+    .row-eq-height {
+        display: flex;
+    }
+}
+
+body > .container [class*='col-'] {
+    margin-top: 15px;
+    margin-bottom: 15px;
+}
+
+body > .container .row h3 {
+    margin-top: 0px;
+    margin-bottom: 10px;
+    font-weight: bold;
+    color: #000066;
+}
+
+body > .container li {
+    list-style-type: none;
+}
+
+body > .container li,
+body > .container .body-bold {
+    font-size: 16px;
+    font-weight: bold;
+}
+
+
+body > .container a {
+    color: #FF3300;
+}
+
+body > .container li > span {
+    color: #AAA;
+    font-style: italic;
+}
+
+body > .container ul {
+    padding: 0px;
+    margin: 0px;
+}

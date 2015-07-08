@@ -1,0 +1,13 @@
+{% extends "lists.html" %}
+{% block items %}
+<h3>{{category.name}} Items ({{items|length}} items)</h3>
+<ul>
+  {% for item in items %}
+  <li>
+    <a href="{{url_for('item_detail', category_name=item.category.name, item_title=item.title)}}">
+      {{item.title}}
+    </a>
+  </li>
+  {% endfor %}
+</ul>
+{% endblock %}

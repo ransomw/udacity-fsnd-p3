@@ -1,0 +1,21 @@
+{% extends "lists.html" %}
+{% block items %}
+{% if session.user_id %}
+<a class="body-bold" href="{{url_for('item_new')}}">
+  Add item
+</a>
+{% endif %}
+<h3>Latest Items</h3>
+<ul>
+  {% for item in items %}
+  <li>
+    <a href="{{url_for('item_detail', category_name=item.category.name, item_title=item.title)}}">
+      {{item.title}}
+    </a>
+    <span>
+      ({{item.category.name}})
+    </span>
+  </li>
+  {% endfor %}
+</ul>
+{% endblock %}
