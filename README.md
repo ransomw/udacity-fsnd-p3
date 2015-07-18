@@ -1,6 +1,6 @@
 # Udacity fullstack nanodegree project 3
 
-This repository's `catalog` directory contains the modified contents of the [udacity fullstack nanodegree](https://github.com/udacity/fullstack-nanodegree-vm/tree/master/vagrant) repo's `vagrant/catalog` directory.  After [installing vagrant](https://www.udacity.com/wiki/ud197/install-vagrant), replace that repository's `catalog` directory with the one contained here.
+[Installing vagrant](https://www.udacity.com/wiki/ud197/install-vagrant), with the included `Vagrantfile`.
 
 To run the project, execute `python run.py` from the `catalog` directory, optionally running `python capp/lotsofitems.py` first to prepopulate the database with some sample data.
 

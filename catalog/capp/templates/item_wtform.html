@@ -1,0 +1,50 @@
+{% if form.errors %}
+<div class="alert alert-danger" role="alert">
+  <!-- <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span> -->
+  <!-- <div class="sr-only">Error</div> -->
+  Errors with some values
+</div>
+{% endif %}
+<form method="post">
+  <div class="form-group
+              {% if form.title.errors %}has-error{% endif %}
+              ">
+    <!-- {{ form.title.label }} -->
+    <!-- ??? the wtform api doesn't make adding
+         a class to a label very easy...
+      -->
+    <label for="{{ form.title.label.field_id }}"
+           class="control-label">
+      {{ form.title.label.text }}
+    </label>
+    {{ form.title(class="form-control", placeholder="Enter title") }}
+    {% for err in form.title.errors %}
+    <span class="help-block">{{ err }}</span>
+    {% endfor %}
+  </div>
+  <div class="form-group
+              {% if form.description.errors %}has-error{% endif %}
+              ">
+    <label for="{{ form.description.label.field_id }}"
+           class="control-label">
+      {{ form.description.label.text }}
+    </label>
+    {{ form.description(class="form-control", placeholder="Enter description") }}
+    {% for err in form.description.errors %}
+    <span class="help-block">{{ err }}</span>
+    {% endfor %}
+  </div>
+  <div class="form-group
+              {% if form.category.errors %}has-error{% endif %}
+              ">
+    <label for="{{ form.category.label.field_id }}"
+           class="control-label">
+      {{ form.category.label.text }}
+    </label>
+    {{ form.category(class="form-control") }}
+    {% for err in form.category.errors %}
+    <span class="help-block">{{ err }}</span>
+    {% endfor %}
+  </div>
+  <button type="submit" class="btn">Submit</button>
+</form>
