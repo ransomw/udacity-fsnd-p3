@@ -1,9 +1,12 @@
 from pdb import set_trace as st
 
+import os
 import random
 import string
 import json
 from functools import wraps
+import imghdr
+import time
 
 from werkzeug.security import generate_password_hash
 from werkzeug.security import check_password_hash
@@ -15,16 +18,20 @@ from flask import make_response
 from flask import redirect
 from flask import url_for
 from flask import jsonify
+from flask import send_file
 
 from sqlalchemy import asc
 from sqlalchemy import desc
 from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy.exc import SQLAlchemyError
 
 from oauth2client.client import flow_from_clientsecrets
 from oauth2client.client import FlowExchangeError
 
 import httplib2
 import requests
+
+from dict2xml import dict2xml
 
 from models import User
 from models import Category
@@ -34,6 +41,7 @@ from models import session
 import view_helpers as vh
 
 from capp import app
+from capp import csrf
 
 G_CLIENT_ID = json.loads(
     open('client_secrets.json', 'r').read())['web']['client_id']
@@ -95,9 +103,11 @@ def login():
             for _ in range(32)
         )
         login_session['state'] = state
-        return render_template('login.html',
-                               state=state,
-                               G_CLIENT_ID=G_CLIENT_ID)
+        return render_template(
+            'login.html',
+            state=state,
+            G_CLIENT_ID=G_CLIENT_ID,
+            GH_CLIENT_ID=app.config['GITHUB_CLIENT_ID'])
 
 
 # disable for production, used only for dev w/o internet connection
@@ -124,8 +134,8 @@ def login_github():
     # exchange access code for access token
     token_url = 'https://github.com/login/oauth/access_token'
     token_params = {
-        'client_id': 'fd76823f38c3fab6b951',
-        'client_secret': '09d09854fe176df5009752604ec49915ef7e2779',
+        'client_id': app.config['GITHUB_CLIENT_ID'],
+        'client_secret': app.config['GITHUB_CLIENT_SECRET'],
         'code': str(code),
     }
     token_headers = {
@@ -153,6 +163,7 @@ def login_github():
     return redirect(url_for('home'))
 
 
+@csrf.exempt
 @app.route('/gconnect', methods=['POST'])
 def gconnect():
     # check that request is from the login page
@@ -219,7 +230,7 @@ def logout():
 @app.route('/')
 def home():
     categories = session.query(Category).all()
-    # todo: most recent and sort by modify time
+    # todo: most recent
     items = session.query(Item).order_by(desc(Item.last_update))
     return render_template('home.html',
                            session=login_session,
@@ -231,11 +242,22 @@ def home():
 @login_required
 def item_new():
     if request.method == 'POST':
+        # store form data
         try:
-            vh.item_from_form(Item(), request.form,
-                              user_id=login_session.get('user_id'))
+            item = vh.item_from_form(
+                Item(), request.form,
+                user_id=login_session.get('user_id'))
         except ValueError as e:
-            return str(e)
+            return "Database validation error: " + str(e)
+        except SQLAlchemyError as e:
+            # todo: log error, but don't display detailed message
+            # for security reasons
+            return "Database error: " + str(e)
+        # store image file
+        file_storage_err = vh.store_item_pic(
+            item, request.files['picture'])
+        if file_storage_err is not None:
+            return file_storage_err
         return redirect(url_for('home'))
     else:
         categories = session.query(Category).all()
@@ -249,22 +271,34 @@ def item_edit(item_title):
     categories = session.query(Category).all()
     item = session.query(Item).filter_by(
         title=item_title).one()
+    user = session.query(User).filter_by(
+        id=login_session.get('user_id')).one()
+    if item.user is not None and item.user.id != user.id:
+        return redirect(url_for('home'))
     if request.method == 'POST':
         form = vh.ItemForm(request.form, item)
-        if not form.validate():
+        file_storage_err = vh.store_item_pic(
+            item, request.files['picture'])
+        if (not form.validate() or file_storage_err is not None):
             return render_template('item_edit.html',
-                                   form=form)
+                                   form=form,
+                                   file_err=file_storage_err)
         form.populate_obj(item)
         try:
             session.add(item)
             session.commit()
         except ValueError as e:
-            return "database error: " + str(e)
+            return "Database validation error: " + str(e)
+        except SQLAlchemyError as e:
+            # todo: log error, but don't display detailed message
+            # for security reasons
+            return "Database error: " + str(e)
         return redirect(url_for('home'))
     else:
         form = vh.ItemForm(obj=item)
         return render_template('item_edit.html',
-                               form=form)
+                               form=form,
+                               file_err=None)
 
 
 @app.route('/catalog/<string:item_title>/delete',
@@ -273,7 +307,14 @@ def item_edit(item_title):
 def item_delete(item_title):
     item = session.query(Item).filter_by(
         title=item_title).one()
+    user = session.query(User).filter_by(
+        id=login_session.get('user_id')).one()
+    if item.user is not None and item.user.id != user.id:
+        return redirect(url_for('home'))
     if request.method == 'POST':
+        img_filepath = vh.get_item_image_filepath(item.id)
+        if os.path.isfile(img_filepath):
+            os.remove(img_filepath)
         session.delete(item)
         session.commit()
         return redirect(url_for('home'))
@@ -303,19 +344,54 @@ def item_detail(category_name, item_title):
     item = session.query(Item).filter_by(
         category_id=category.id).filter_by(
             title=item_title).one()
+    has_img = vh.get_item_image_info(item.id) is not None
+    can_modify = (item.user is None or
+                  item.user.id == login_session.get('user_id'))
     return render_template('item.html',
                            session=login_session,
-                           item=item)
+                           item=item,
+                           has_img=has_img,
+                           can_modify=can_modify,
+                           rand_q=time.time())
+
+
+@app.route('/catalog/item/<int:item_id>/img')
+def item_img(item_id):
+    try:
+        item = session.query(Item).filter_by(
+            id=item_id).one()
+    except NoResultFound:
+        return make_response(
+            json.dumps('Image not found'),
+            401)
+    img_info = vh.get_item_image_info(item.id)
+    if img_info is None:
+        raise Exception("programming or operation error")
+    return send_file(os.path.join('..', img_info['path']),
+                     mimetype='image/'+img_info['type'])
+
+
+@app.route('/api/category')
+def api_categories():
+    categories = session.query(Category).all()
+    return jsonify(Categories=[c.serialize for c in categories])
+
+
+@app.route('/api/item')
+def api_items():
+    print "top of api_items"
+    items = session.query(Item).all()
+    return jsonify(Items=[i.serialize for i in items])
 
 
 @app.route('/catalog.json')
 def json_catalog():
-    categories = session.query(Category).all()
-    categories_json = [c.serialize for c in categories]
-    for category_json in categories_json:
-        items = session.query(Item).filter_by(
-            category_id=category_json['id']).all()
-        if len(items) > 0:
-            category_json['Item'] = [
-                i.serialize for i in items]
-    return jsonify(Category=categories_json)
+    return jsonify(vh.serialize_catalog())
+
+
+@app.route('/catalog.xml')
+def xml_catalog():
+    xml = dict2xml(vh.serialize_catalog(), wrap="Catalog")
+    response = make_response(xml)
+    response.headers['Content-Type'] = 'application/xml'
+    return response

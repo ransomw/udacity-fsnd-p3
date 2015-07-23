@@ -1,11 +1,13 @@
-{% if form.errors %}
+{% if form.errors or file_err %}
 <div class="alert alert-danger" role="alert">
   <!-- <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span> -->
   <!-- <div class="sr-only">Error</div> -->
   Errors with some values
 </div>
 {% endif %}
-<form method="post">
+<form method="post" enctype="multipart/form-data">
+  <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+
   <div class="form-group
               {% if form.title.errors %}has-error{% endif %}
               ">
@@ -45,6 +47,14 @@
     {% for err in form.category.errors %}
     <span class="help-block">{{ err }}</span>
     {% endfor %}
+  </div>
+  <div class="form-group
+              {% if file_err %}has-error{% endif %}">
+    <label for="picture">Picture</label>
+    <input type="file" name="picture" id="picture">
+    {% if file_err %}
+    <span class="help-block">{{ file_err }}</span>
+    {% endif %}
   </div>
   <button type="submit" class="btn">Submit</button>
 </form>

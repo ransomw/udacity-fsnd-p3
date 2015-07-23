@@ -5,7 +5,12 @@
   <div class="row">
     <div class="col-md-12">
       <h3>{{item.title}}</h3>
+      {% if has_img %}
+      <!-- add a query string to prevent caching -->
+      <img src="{{url_for('item_img',item_id=item.id)}}?rand={{rand_q}}">
+      {% endif %}
       <p>Description: {{item.description}}</p>
+      {% if can_modify %}
       <a href="{{url_for('item_edit', item_title=item.title)}}">
         Edit
       </a>
@@ -13,6 +18,7 @@
       <a href="{{url_for('item_delete', item_title=item.title)}}">
         Delete
       </a>
+      {% endif %}
     </div>
   </div>
 </div>

@@ -9,6 +9,7 @@
         Are you sure you want to delete?
       </p>
       <form method="post">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
         <button type="submit" class="btn">Submit</button>
       </form>
     </div>

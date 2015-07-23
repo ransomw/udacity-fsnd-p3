@@ -33,6 +33,7 @@ class Category(Base):
         Integer, primary_key=True)
     name = Column(
         String(80), nullable=False, unique=True)
+    items = relationship("Item", cascade="delete")
 
     def __str__(self):
         return self.name
@@ -55,7 +56,7 @@ class Item(Base):
     description = Column(String(250))
     category_id = Column(
         Integer, ForeignKey('category.id'), nullable=False)
-    category = relationship(Category, cascade="delete")
+    category = relationship(Category)
     user_id = Column(Integer, ForeignKey('user.id'))
     user = relationship(User)
     last_update = Column(
@@ -86,6 +87,9 @@ Base.metadata.create_all(engine)
 # ??? is it appropriate to initialize a DB session here?
 # I want to use the same session in both the view and view_helper
 # modules but avoid circular imports
+# todo: must figure out some other way to manage session
+#       in order to avoid application crashes when session
+#       gets disconnected or has a transaction to be rolled back
 Base.metadata.bind = engine
 DBSession = sessionmaker(bind=engine)
 session = DBSession()
